@@ -3,6 +3,36 @@
    Smooth scrolling · Scroll reveal · Navbar active state
    ============================================================ */
 
+function splitWords(element, step, duration) {
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+
+  while (walker.nextNode()) {
+    if (walker.currentNode.nodeValue.trim()) textNodes.push(walker.currentNode);
+  }
+
+  let index = 0;
+  textNodes.forEach(textNode => {
+    const fragment = document.createDocumentFragment();
+    textNode.nodeValue.split(/(\s+)/).forEach(part => {
+      if (!part) return;
+      if (/^\s+$/.test(part)) {
+        fragment.append(document.createTextNode(part));
+        return;
+      }
+
+      const unit = document.createElement('span');
+      unit.className = 'tr-unit';
+      unit.textContent = part;
+      unit.style.setProperty('--tr-delay', `${index * step}ms`);
+      unit.style.setProperty('--tr-duration', `${duration}ms`);
+      fragment.append(unit);
+      index += 1;
+    });
+    textNode.replaceWith(fragment);
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
 
   /* ─── ELEMENTS ─── */
@@ -88,6 +118,36 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ═══════════════════════════════════════════════════════════════
      CAROUSEL — Olist Dashboard Slider
      ═══════════════════════════════════════════════════════════════ */
+  // 1) Nama di hero: muncul kiri ke kanan, berulang terus
+  const heroName = document.querySelector('.hero-heading');
+  if (heroName) {
+    const STEP = 0, DUR = 1500;
+    splitWords(heroName, STEP, DUR);
+
+    const units    = heroName.querySelectorAll('.tr-unit').length;
+    const showTime = DUR + (units - 1) * STEP;   // waktu sampai semua kata tampil
+    const HOLD     = 2500;                        // lama teks diam setelah tampil
+    const FADE     = 450;                         // lama teks memudar sebelum diulang
+
+    function playHeroName() {
+      heroName.classList.add('tr-in');            // mulai: kiri ke kanan
+
+      setTimeout(() => {
+        heroName.classList.add('tr-fade');        // pudar
+
+        setTimeout(() => {
+          heroName.classList.add('tr-reset');     // matikan transisi sebentar
+          heroName.classList.remove('tr-in');
+          void heroName.offsetWidth;              // paksa browser menghitung ulang
+          heroName.classList.remove('tr-reset', 'tr-fade');
+          setTimeout(playHeroName, 150);          // ulangi
+        }, FADE);
+      }, showTime + HOLD);
+    }
+
+    setTimeout(playHeroName, 250);
+  }
+
   /* Interactive skill notes */
   const skillNotes = {
     'sql': 'Menyusun kueri untuk mengambil, menggabungkan, menyaring, dan merangkum data dari basis data relasional.',
@@ -105,6 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
     'problem-solving': 'Mendefinisikan masalah, memeriksa bukti, lalu menyusun langkah penyelesaian yang terukur.',
     'data-driven-decisions': 'Menghubungkan temuan analisis dengan pilihan tindakan dan alasan yang dapat dijelaskan.',
     'google-colab': 'Menjalankan dan mendokumentasikan analisis Python melalui notebook yang bisa diakses di peramban.',
+    'visual-studio-code': 'Editor kode untuk menulis dan mengelola berkas proyek.',
     'github': 'Menyimpan dan mengelola versi kode serta dokumentasi proyek analisis.',
     'excel': 'Mengolah tabel, menggunakan rumus, dan merangkum data untuk analisis serta pelaporan.',
     'pandas': 'Membersihkan, menyaring, menggabungkan, dan merangkum data berbentuk tabel dengan Python.',
